@@ -92,7 +92,7 @@ int main() {
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
-    // Ucitavamo sejdere
+    // Shader loading
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
@@ -146,7 +146,7 @@ int main() {
             1.0f, -1.0f,  1.0f
     };
 
-    // skybox VAO
+    // skybox VAO, VBO, and loading textures
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -168,7 +168,7 @@ int main() {
 
     unsigned int cubemapTexture = loadCubemap(faces);
 //******************************************************************************************
-    // kvadrat na kojem ce da stoji tekstura travke koja ce da se doda na ostrvo
+    // Square for the grass
     float transparentVertices[] = {
             // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
             0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
@@ -180,7 +180,7 @@ int main() {
             1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
-    //VAO i VBO za kocku koja ce da ima teksturu trave
+    //VAO i VBO for grass
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
     glGenBuffers(1, &transparentVBO);
@@ -196,7 +196,7 @@ int main() {
     stbi_set_flip_vertically_on_load(false);
     unsigned int travaTexture = loadTexture(FileSystem::getPath("resources/textures/grass.png").c_str());
 
-    //Malo pozicije za travke
+    //Grass possitions
     vector<glm::vec3> vegetation
             {
                     //centralno ostrvo
@@ -241,10 +241,9 @@ int main() {
     glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-    // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+    // color attachments we'll use for rendering
     unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
     glDrawBuffers(2, attachments);
-    // finally check if framebuffer is complete
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Framebuffer not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -264,13 +263,12 @@ int main() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
-        // also check if framebuffers are complete (no need for depth buffer)
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Framebuffer not complete!" << std::endl;
     }
 
 
-  //*************************************************************************************
+    //*************************************************************************************
 
     // load models
     // -----------
@@ -278,19 +276,19 @@ int main() {
     Model ostrvo1("resources/objects/island/island.obj", true);
     ostrvo1.SetShaderTextureNamePrefix("material.");
 
-   //ucitana drva
+    //Loading trees
     Model drvo1("resources/objects/Tree/Tree.obj", true); // MALO DRVO
     drvo1.SetShaderTextureNamePrefix("material.");
     Model drvo2("resources/objects/Tree2/Tree.obj", true); // VELIKO DRVO
     drvo2.SetShaderTextureNamePrefix("material.");
 
-    //ucitavamo cvece i zbunje
+    //Loading plant and bushes
     Model zbun1("resources/objects/Round_Box_Hedge/10453_Round_Box_Hedge_v1_Iteration3.obj", true);
     zbun1.SetShaderTextureNamePrefix("material.");
     Model tulip("resources/objects/tulip_flower/12978_tulip_flower_l3.obj", true);
     tulip.SetShaderTextureNamePrefix("material.");
 
-    // ostalo
+    // the rest
     Model bench("resources/objects/ConcreteBench/ConcreteBench-L3.obj", true); //ostrvo1
     bench.SetShaderTextureNamePrefix("material.");
     Model bird("resources/objects/Bird/12214_Bird_v1max_l3.obj", true);
@@ -298,6 +296,7 @@ int main() {
     Model lampion("resources/objects/svetlo1/streetlight.obj", true);
     lampion.SetShaderTextureNamePrefix("material.");
 
+    //Shader activation
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
 
@@ -329,20 +328,20 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //Sejder koji renderuje ostrvo sa osnovnim bojama
+        //Object and model shader
         ourShader.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //directional
+        //Directional Lignt
         ourShader.setVec3("dirLight.direction", -20.0f, -20.0f, 0.0f);
         ourShader.setVec3("dirLight.ambient", 0.06, 0.06, 0.06);
         ourShader.setVec3("dirLight.diffuse",  0.6f,0.2f,0.2);
         ourShader.setVec3("dirLight.specular", 0.1, 0.1, 0.1);
 
         // Pointlight's
-            //1
+        //1
         ourShader.setVec3("pointLight[0].position", glm::vec3(-1.05f,2.4f,1.7f));
         ourShader.setVec3("pointLight[0].ambient", glm::vec3(0.15, 0.15, 0.15));
         ourShader.setVec3("pointLight[0].diffuse", glm::vec3(1.5f,1.5f,1.1f));
@@ -350,24 +349,24 @@ int main() {
         ourShader.setFloat("pointLight[0].constant", 1.0f);
         ourShader.setFloat("pointLight[0].linear", lin);
         ourShader.setFloat("pointLight[0].quadratic", kvad);
-            //2
-        ourShader.setVec3("pointLight[1].position", glm::vec3(-1.70f,2.4f,-11.1f));
+        //2
+        ourShader.setVec3("pointLight[1].position", glm::vec3(-1.70f,(2.4f + sin(glfwGetTime())/6),-11.1f));
         ourShader.setVec3("pointLight[1].ambient", glm::vec3(0.15, 0.15, 0.15));
         ourShader.setVec3("pointLight[1].diffuse", glm::vec3(1.5f,1.5f,1.1f));
         ourShader.setVec3("pointLight[1].specular", glm::vec3(0.15, 0.15, 0.15));
         ourShader.setFloat("pointLight[1].constant", 1.0f);
         ourShader.setFloat("pointLight[1].linear", lin);
         ourShader.setFloat("pointLight[1].quadratic", kvad);
-            //3
-        ourShader.setVec3("pointLight[2].position", glm::vec3(-5.75f,4.85f,8.95f));
+        //3
+        ourShader.setVec3("pointLight[2].position", glm::vec3(-5.75f,(4.85f + sin(glfwGetTime())/6),8.95f));
         ourShader.setVec3("pointLight[2].ambient", glm::vec3(0.15, 0.15, 0.15));
         ourShader.setVec3("pointLight[2].diffuse", glm::vec3(1.5f,1.5f,1.1f));
         ourShader.setVec3("pointLight[2].specular", glm::vec3(0.15, 0.15, 0.15));
         ourShader.setFloat("pointLight[2].constant", 1.0f);
         ourShader.setFloat("pointLight[2].linear", lin);
         ourShader.setFloat("pointLight[2].quadratic", kvad);
-            //4
-        ourShader.setVec3("pointLight[3].position", glm::vec3(7.7f,-0.4f,8.75f));
+        //4
+        ourShader.setVec3("pointLight[3].position", glm::vec3(7.7f,(-0.4f + sin(glfwGetTime())/6),8.75f));
         ourShader.setVec3("pointLight[3].ambient", glm::vec3(0.15, 0.15, 0.15));
         ourShader.setVec3("pointLight[3].diffuse", glm::vec3(1.5f,1.5f,1.1f));
         ourShader.setVec3("pointLight[3].specular", glm::vec3(0.15, 0.15, 0.15));
@@ -377,8 +376,8 @@ int main() {
 
 
 
-          ourShader.setVec3("viewPosition", camera.Position);
-          ourShader.setFloat("material.shininess", 32.0f);
+        ourShader.setVec3("viewPosition", camera.Position);
+        ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
@@ -398,7 +397,7 @@ int main() {
         ourShader.setMat4("model", model);
         ostrvo1.Draw(ourShader);
 
-       // Lampion
+        // Lampion
         model = glm::mat4(1.0f);
         model = glm::translate(model,glm::vec3(-1.2f,-0.95f,1.4f));
         model = glm::scale(model, glm::vec3(1.2f,1.2f,1.2f));
@@ -442,28 +441,28 @@ int main() {
         //***********************************************************************
         // island two POZADI
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(0.0f,-3.0f,-10.0f));
+        model = glm::translate(model,glm::vec3(0.0f,(-3.0f+ sin(glfwGetTime())/6),-10.0f));
         model = glm::scale(model, glm::vec3(0.4f,0.5f,0.4f));
         ourShader.setMat4("model", model);
         ostrvo1.Draw(ourShader);
 
         //Veliko drvo
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(0.0f,-1.0f,-12.75f));
+        model = glm::translate(model,glm::vec3(0.0f,(-1.0f+ sin(glfwGetTime())/6),-12.75f));
         model = glm::scale(model, glm::vec3(1.0f,1.0f,1.0f));
         ourShader.setMat4("model", model);
         drvo2.Draw(ourShader);
 
         //Lampion
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-1.9f,-0.95f,-11.5f));
+        model = glm::translate(model,glm::vec3(-1.9f,(-0.95f+ sin(glfwGetTime())/6),-11.5f));
         model = glm::scale(model, glm::vec3(1.0f,1.2f,1.2f));
         ourShader.setMat4("model", model);
         lampion.Draw(ourShader);
 
         //ptica desno
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(1.75f,-0.93f,-8.5f));
+        model = glm::translate(model,glm::vec3(1.75f,(-0.93f+ sin(glfwGetTime())/6),-8.5f));
         model = glm::scale(model, glm::vec3(0.05f,0.05f,0.05f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians((float) 50.0), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -472,7 +471,7 @@ int main() {
 
         //ptica levo
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-1.5f,-0.82f,-10.0f));
+        model = glm::translate(model,glm::vec3(-1.5f,(-0.82f+ sin(glfwGetTime())/6),-10.0f));
         model = glm::scale(model, glm::vec3(0.05f,0.05f,0.05f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians((float) 110.0), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -481,7 +480,7 @@ int main() {
 
         //tulip 1
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-1.8f,-0.95f,-8.4f));
+        model = glm::translate(model,glm::vec3(-1.8f,(-0.95f+ sin(glfwGetTime())/6),-8.4f));
         model = glm::scale(model, glm::vec3(0.08f,0.08f,0.08f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -490,7 +489,7 @@ int main() {
 
         //tulip 2
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(0.6f,-1.0f,-7.7f));
+        model = glm::translate(model,glm::vec3(0.6f,(-1.0f+ sin(glfwGetTime())/6),-7.7f));
         model = glm::scale(model, glm::vec3(0.08f,0.08f,0.08f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -499,7 +498,7 @@ int main() {
 
         //tulip 3
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(1.6f,-1.0f,-11.8f));
+        model = glm::translate(model,glm::vec3(1.6f,(-1.0f+ sin(glfwGetTime())/6),-11.8f));
         model = glm::scale(model, glm::vec3(0.08f,0.08f,0.08f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -508,21 +507,21 @@ int main() {
         //******************************************************************
         // island three OSTRVO NAPRED LEVO
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-7.0f,-0.5f,7.0f));
+        model = glm::translate(model,glm::vec3(-7.0f,(-0.5f+ sin(glfwGetTime())/6),7.0f));
         model = glm::scale(model, glm::vec3(0.4f,0.5f,0.4f));
         ourShader.setMat4("model", model);
         ostrvo1.Draw(ourShader);
 
         //donje drvo na ostrvu 3
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-8.3f,1.5f,8.4f));
+        model = glm::translate(model,glm::vec3(-8.3f,(1.5f+ sin(glfwGetTime())/6),8.4f));
         model = glm::scale(model, glm::vec3(1.2f,1.2f,1.2f));
         ourShader.setMat4("model", model);
         drvo1.Draw(ourShader);
 
         //zbun dole
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-7.4f,1.5f,8.9f));
+        model = glm::translate(model,glm::vec3(-7.4f,(1.5f+ sin(glfwGetTime())/6),8.9f));
         model = glm::scale(model, glm::vec3(0.01f,0.01f,0.01f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -530,7 +529,7 @@ int main() {
 
         //  tulip dole
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-5.9f,1.5f,8.9f));
+        model = glm::translate(model,glm::vec3(-5.9f,(1.5f+ sin(glfwGetTime())/6),8.9f));
         model = glm::scale(model, glm::vec3(0.08f,0.08f,0.08f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -538,29 +537,29 @@ int main() {
 
         //lampion
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-5.45f,1.55f,8.7f));
+        model = glm::translate(model,glm::vec3(-5.45f,(1.55f+ sin(glfwGetTime())/6),8.7f));
         model = glm::scale(model, glm::vec3(1.2f,1.2f,1.2f));
         ourShader.setMat4("model", model);
         lampion.Draw(ourShader);
 
         //gornje drvo na ostrvu 3
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-7.0f,1.5f,5.2f));
+        model = glm::translate(model,glm::vec3(-7.0f,(1.5f+ sin(glfwGetTime())/6),5.2f));
         model = glm::scale(model, glm::vec3(1.0f,1.0f,1.0));
         ourShader.setMat4("model", model);
         drvo1.Draw(ourShader);
 
         //zbun gore
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-5.75f,1.5f,4.75f));
+        model = glm::translate(model,glm::vec3(-5.75f,(1.5f+ sin(glfwGetTime())/6),4.75f));
         model = glm::scale(model, glm::vec3(0.01f,0.01f,0.01f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
         zbun1.Draw(ourShader);
 
-      //  tulip gore
+        //  tulip gore
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(-8.0f,1.5f,5.0f));
+        model = glm::translate(model,glm::vec3(-8.0f,(1.5f+ sin(glfwGetTime())/6),5.0f));
         model = glm::scale(model, glm::vec3(0.08f,0.08f,0.08f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -569,21 +568,21 @@ int main() {
         //***********************************************************
         // island four OSTRVO NAPRED DESNO
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(7.0f,-5.5f,7.0f));
+        model = glm::translate(model,glm::vec3(7.0f,(-5.5f+ sin(glfwGetTime())/6),7.0f));
         model = glm::scale(model, glm::vec3(0.4f,0.5f,0.4f));
         ourShader.setMat4("model", model);
         ostrvo1.Draw(ourShader);
 
         //Veliko drvo na ostrvu 4
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(8.0f,-3.5f,5.0f));
+        model = glm::translate(model,glm::vec3(8.0f,(-3.5f+ sin(glfwGetTime())/6),5.0f));
         model = glm::scale(model, glm::vec3(0.8f,0.8f,0.8f));
         ourShader.setMat4("model", model);
         drvo2.Draw(ourShader);
 
         //zbun gore
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(6.0f,-3.5f,5.2f));
+        model = glm::translate(model,glm::vec3(6.0f,(-3.5f+ sin(glfwGetTime())/6),5.2f));
         model = glm::scale(model, glm::vec3(0.01f,0.01f,0.01f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -591,7 +590,7 @@ int main() {
 
         //malo drvo na ostrvi 4
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(5.5f,-3.5f,8.6f));
+        model = glm::translate(model,glm::vec3(5.5f,(-3.5f+ sin(glfwGetTime())/6),8.6f));
         model = glm::scale(model, glm::vec3(1.0f,1.0f,1.0f));
         ourShader.setMat4("model", model);
         drvo1.Draw(ourShader);
@@ -599,7 +598,7 @@ int main() {
         //zbun dole
 
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(6.4f,-3.5f,8.8f));
+        model = glm::translate(model,glm::vec3(6.4f,(-3.5f+ sin(glfwGetTime())/6),8.8f));
         model = glm::scale(model, glm::vec3(0.01f,0.01f,0.01f));
         model = glm::rotate(model, glm::radians((float) -90.0), glm::vec3(1.0f, 0.0f, 0.0f));
         ourShader.setMat4("model", model);
@@ -607,7 +606,7 @@ int main() {
 
         //lampion
         model = glm::mat4(1.0f);
-        model = glm::translate(model,glm::vec3(8.2f,-3.4f,8.8f));
+        model = glm::translate(model,glm::vec3(8.2f,(-3.4f+ sin(glfwGetTime())/6),8.8f));
         model = glm::scale(model, glm::vec3(1.2f,1.2f,1.2f));
         ourShader.setMat4("model", model);
         lampion.Draw(ourShader);
@@ -627,13 +626,24 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, travaTexture);
         for (unsigned int i = 0; i < vegetation.size(); i++)
         {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, vegetation[i]);
-            travaShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            if(i > 3){
+                model = glm::mat4(1.0f);
+                model = glm::translate(model, glm::vec3(vegetation[i].x, (vegetation[i].y + sin(glfwGetTime())/6) , vegetation[i].z));
+                travaShader.setMat4("model", model);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            }
+            else{
+                model = glm::mat4(1.0f);
+                model = glm::translate(model, vegetation[i]);
+                travaShader.setMat4("model", model);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            }
+
         }
 
-       //*************************************************************************
+        //*************************************************************************
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
@@ -667,8 +677,8 @@ int main() {
                 first_iteration = false;
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-       // **********************************************
-        // load hdr
+        // **********************************************
+        // load hdr and bloom
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         hdrShader.use();
         glActiveTexture(GL_TEXTURE0);
@@ -687,13 +697,11 @@ int main() {
         glfwPollEvents();
     }
 
-    //brisanje array i buffera koje ne koristimo vise
+    //deleting arrays and buffers
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVAO);
     glDeleteVertexArrays(1, &transparentVAO);
     glDeleteBuffers(1, &transparentVBO);
-//    glDeleteVertexArrays(1, &cubeVAO);
-//    glDeleteBuffers(1, &cubeVBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -730,7 +738,7 @@ void renderQuad()
     glBindVertexArray(0);
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// Processing all input
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -810,7 +818,8 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
 }
-
+//Cubemap loading function
+//------------------------------------------------------------------------
 unsigned int loadCubemap(vector<std::string> faces)
 {
     unsigned int textureID;
@@ -840,7 +849,8 @@ unsigned int loadCubemap(vector<std::string> faces)
 
     return textureID;
 }
-
+//Texture loading function
+//-----------------------------------------------------------
 unsigned int loadTexture(char const * path)
 {
     unsigned int textureID;
